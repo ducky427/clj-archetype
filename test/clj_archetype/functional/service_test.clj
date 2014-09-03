@@ -1,11 +1,9 @@
 (ns clj-archetype.functional.service-test
-  (:require [clojure.test :refer :all]
-            [clj-archetype.service :refer :all])
+  (:require [clojure.test :refer :all])
   (:import (com.sun.jersey.api.client Client)
            (org.neo4j.server NeoServer)
            (org.neo4j.server.helpers CommunityServerBuilder)
-           (org.neo4j.server.rest JaxRsResponse RestRequest)
-           (clj_archetype.service ArchetypeService)))
+           (org.neo4j.server.rest JaxRsResponse RestRequest)))
 
 (def ^{:dynamic true} ^NeoServer *server*)
 (def ^{:dynamic true} ^RestRequest *request*)
