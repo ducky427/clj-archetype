@@ -12,15 +12,15 @@
 (def client (Client/create))
 
 (defn each-fixture [f]
-  (binding [*server*     (.build (.withThirdPartyJaxRsPackage (CommunityServerBuilder/server)
-                                                              "clj_archetype.service", "/v1"))]
+  (binding [*server*     (-> (CommunityServerBuilder/server)
+                             (.withThirdPartyJaxRsPackage "clj_archetype.service" "/v1")
+                             (.build))]
     (.start *server*)
-    (binding [*request*  (RestRequest. (.resolve (.baseUri *server*)
-                                                 "/v1")
-                                       client)]
+    (binding [*request*  (-> (.baseUri *server*)
+                             (.resolve "/v1")
+                             (RestRequest.))]
       (f))
-    (.stop *server*)
-    ))
+    (.stop *server*)))
 
 (use-fixtures :each each-fixture)
 
