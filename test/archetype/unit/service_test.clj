@@ -19,3 +19,8 @@
 (deftest test-should-respond-to-helloWorld
   (testing "Should respond to hello world"
     (is (= "Hello World!" (.helloWorld *service*)))))
+
+
+(deftest test-should-warm-up
+  (testing "Should warm up"
+    (is (= "Warmed up and ready to go!" (.warmUp *service* *connection*)))))

@@ -27,3 +27,9 @@
   (testing "Should respond to hello world"
     (let [^JaxRsResponse response  (.get *request* "service/helloworld")]
       (is (= "Hello World!" (.getEntity response))))))
+
+
+(deftest test-should-warm-up
+  (testing "Should warm up"
+    (let [^JaxRsResponse response  (.get *request* "service/warmup")]
+      (is (= "Warmed up and ready to go!" (.getEntity response))))))
