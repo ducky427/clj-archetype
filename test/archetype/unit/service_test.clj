@@ -24,3 +24,9 @@
 (deftest test-should-warm-up
   (testing "Should warm up"
     (is (= "Warmed up and ready to go!" (.warmUp *service* *connection*)))))
+
+
+(deftest test-migrate
+  (testing "Should migrate"
+    (is (= "Migrated!" (.migrate *service* *connection*)))
+    (is (= "Already Migrated!" (.migrate *service* *connection*)))))

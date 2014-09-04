@@ -22,14 +22,23 @@
 
 (use-fixtures :once each-fixture)
 
+(defn get-request-result
+  [^String url]
+  (let [^JaxRsResponse response  (.get *request* url)]
+    (.getEntity response)))
+
 
 (deftest test-should-respond-to-helloWorld
   (testing "Should respond to hello world"
-    (let [^JaxRsResponse response  (.get *request* "service/helloworld")]
-      (is (= "Hello World!" (.getEntity response))))))
+    (is (= "Hello World!" (get-request-result "service/helloworld")))))
 
 
 (deftest test-should-warm-up
   (testing "Should warm up"
-    (let [^JaxRsResponse response  (.get *request* "service/warmup")]
-      (is (= "Warmed up and ready to go!" (.getEntity response))))))
+    (is (= "Warmed up and ready to go!" (get-request-result "service/warmup")))))
+
+
+(deftest test-should-migrate
+  (testing "Should migrate"
+    (is (= "Migrated!" (get-request-result "service/migrate")))
+    (is (= "Already Migrated!" (get-request-result "service/migrate")))))
