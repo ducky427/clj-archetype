@@ -20,7 +20,7 @@
       (f))
     (.stop *server*)))
 
-(use-fixtures :each each-fixture)
+(use-fixtures :once each-fixture)
 
 
 (deftest test-should-respond-to-helloWorld

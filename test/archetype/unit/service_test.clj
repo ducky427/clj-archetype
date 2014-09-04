@@ -14,7 +14,7 @@
       (f))
     (.shutdown *connection*)))
 
-(use-fixtures :each each-fixture)
+(use-fixtures :once each-fixture)
 
 (deftest test-should-respond-to-helloWorld
   (testing "Should respond to hello world"
