@@ -1,4 +1,4 @@
-(ns clj-archetype.service
+(ns archetype.service
   (:import (javax.ws.rs DefaultValue GET Path QueryParam)
            (javax.ws.rs.core Context Response)
            (org.neo4j.graphdb GraphDatabaseService Transaction)))

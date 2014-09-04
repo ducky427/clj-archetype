@@ -1,9 +1,9 @@
-(ns clj-archetype.unit.service-test
+(ns archetype.unit.service-test
   (:require [clojure.test :refer :all]
-            [clj-archetype.service :refer :all])
+            [archetype.service :refer :all])
   (:import (org.neo4j.test TestGraphDatabaseFactory)
            (org.neo4j.graphdb GraphDatabaseService)
-           (clj_archetype.service ArchetypeService)))
+           (archetype.service ArchetypeService)))
 
 (def ^{:dynamic true} ^GraphDatabaseService *connection*)
 (def ^{:dynamic true} ^ArchetypeService *service*)

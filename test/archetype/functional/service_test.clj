@@ -1,4 +1,4 @@
-(ns clj-archetype.functional.service-test
+(ns archetype.functional.service-test
   (:require [clojure.test :refer :all])
   (:import (com.sun.jersey.api.client Client)
            (org.neo4j.server NeoServer)
@@ -11,7 +11,7 @@
 
 (defn each-fixture [f]
   (binding [*server*     (-> (CommunityServerBuilder/server)
-                             (.withThirdPartyJaxRsPackage "clj_archetype.service" "/v1")
+                             (.withThirdPartyJaxRsPackage "archetype.service" "/v1")
                              (.build))]
     (.start *server*)
     (binding [*request*  (-> (.baseUri *server*)

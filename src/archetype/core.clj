@@ -1,4 +1,4 @@
-(ns clj-archetype.core
+(ns archetype.core
   (:gen-class))
 
 (defn -main

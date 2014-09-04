@@ -1,3 +1,3 @@
-(ns clj-archetype.core-test
+(ns archetype.core-test
   (:require [clojure.test :refer :all]
-            [clj-archetype.core :refer :all]))
+            [archetype.core :refer :all]))
