@@ -10,3 +10,8 @@
   ^RelationshipType
   [^String x]
   (DynamicRelationshipType/withName x))
+
+
+(defn #^"[Lorg.neo4j.graphdb.DynamicRelationshipType;" get-rels
+  [rel-name]
+  (into-array ^RelationshipType [(make-rel rel-name)]))

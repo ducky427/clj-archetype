@@ -52,3 +52,81 @@
             (.getEntity ^Response (.getIdentity *service* "" valid-md5-hash *connection*)))))
     (is (thrown-with-msg? Exception #"Identity not found"
                           (.getIdentity *service* not-found-email "" *connection*)))))
+
+
+(deftest test-identity-likes
+  (testing "Identity Likes"
+    (with-open [^Transaction tx     (.beginTx *connection*)]
+      (let  [^Node node   (.createNode *connection*)
+             ^Node page1  (.createNode *connection*)
+             ^Node page2  (.createNode *connection*)]
+        (.addLabel node (ac/make-label "Identity"))
+        (.addLabel page1 (ac/make-label "Page"))
+        (.addLabel page2 (ac/make-label "Page"))
+        (.setProperty node "hash" valid-md5-hash)
+        (.setProperty page1 "url" valid-url)
+        (.setProperty page2 "url" valid-url2)
+        (.createRelationshipTo node page1 (ac/make-rel "LIKES"))
+        (.createRelationshipTo node page2 (ac/make-rel "LIKES"))
+        (.success tx)))
+    (is (= valid-identity-pages
+           (cc/parse-string
+            (.getEntity ^Response (.getIdentityLikes *service* valid-email "" *connection*)))))
+
+    (is (= valid-identity-pages
+           (cc/parse-string
+            (.getEntity ^Response (.getIdentityLikes *service* "" valid-md5-hash *connection*)))))
+    (is (thrown-with-msg? Exception #"Identity not found"
+                          (.getIdentityLikes *service* not-found-email "" *connection*)))))
+
+
+(deftest test-identity-hates
+  (testing "Identity Hates"
+    (with-open [^Transaction tx     (.beginTx *connection*)]
+      (let  [^Node node   (.createNode *connection*)
+             ^Node page1  (.createNode *connection*)
+             ^Node page2  (.createNode *connection*)]
+        (.addLabel node (ac/make-label "Identity"))
+        (.addLabel page1 (ac/make-label "Page"))
+        (.addLabel page2 (ac/make-label "Page"))
+        (.setProperty node "hash" valid-md5-hash)
+        (.setProperty page1 "url" valid-url)
+        (.setProperty page2 "url" valid-url2)
+        (.createRelationshipTo node page1 (ac/make-rel "HATES"))
+        (.createRelationshipTo node page2 (ac/make-rel "HATES"))
+        (.success tx)))
+    (is (= valid-identity-pages
+           (cc/parse-string
+            (.getEntity ^Response (.getIdentityHates *service* valid-email "" *connection*)))))
+
+    (is (= valid-identity-pages
+           (cc/parse-string
+            (.getEntity ^Response (.getIdentityHates *service* "" valid-md5-hash *connection*)))))
+    (is (thrown-with-msg? Exception #"Identity not found"
+                          (.getIdentityHates *service* not-found-email "" *connection*)))))
+
+
+(deftest test-identity-knows
+  (testing "Identity knows"
+    (with-open [^Transaction tx     (.beginTx *connection*)]
+      (let  [^Node node   (.createNode *connection*)
+             ^Node know1  (.createNode *connection*)
+             ^Node know2  (.createNode *connection*)]
+        (.addLabel node (ac/make-label "Identity"))
+        (.addLabel know1 (ac/make-label "Identity"))
+        (.addLabel know2 (ac/make-label "Identity"))
+        (.setProperty node "hash" valid-md5-hash)
+        (.setProperty know1 "hash" valid-md5-hash2)
+        (.setProperty know2 "hash" valid-md5-hash3)
+        (.createRelationshipTo node know1 (ac/make-rel "KNOWS"))
+        (.createRelationshipTo node know2 (ac/make-rel "KNOWS"))
+        (.success tx)))
+    (is (= valid-identity-knows
+           (cc/parse-string
+            (.getEntity ^Response (.getIdentityKnows *service* valid-email "" *connection*)))))
+
+    (is (= valid-identity-knows
+           (cc/parse-string
+            (.getEntity ^Response (.getIdentityKnows *service* "" valid-md5-hash *connection*)))))
+    (is (thrown-with-msg? Exception #"Identity not found"
+                          (.getIdentityKnows *service* not-found-email "" *connection*)))))

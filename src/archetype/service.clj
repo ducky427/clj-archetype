@@ -1,11 +1,12 @@
 (ns archetype.service
-  (:require [archetype.core :refer [make-label make-rel]]
+  (:require [archetype.core :refer [make-label get-rels]]
             [archetype.identity :as ai]
             [cheshire.core      :as cc])
   (:import (java.util.concurrent TimeUnit)
            (javax.ws.rs DefaultValue GET Path QueryParam)
            (javax.ws.rs.core Context Response)
-           (org.neo4j.graphdb Direction GraphDatabaseService Label Node Relationship Transaction)
+           (org.neo4j.graphdb Direction GraphDatabaseService Label Node Relationship
+                              RelationshipType Transaction)
            (org.neo4j.graphdb.schema Schema)
            (org.neo4j.tooling GlobalGraphOperations))
   (:refer-clojure :exclude [hash]))
@@ -77,12 +78,30 @@
           (Response/ok)
           (.build)))))
 
+(defn get-identity-rel
+  [^GraphDatabaseService db ^String email ^String hash rel-name prop-name]
+  (with-open [^Transaction tx  (.beginTx db)]
+    (let  [hash     (ai/get-hash email hash)
+           i        (ai/get-identity-node hash db)
+           result   (map (fn [^Relationship r]
+                           (.getProperty
+                            (.getEndNode r)
+                            prop-name))
+                         (.getRelationships i (Direction/OUTGOING) (get-rels rel-name)))]
+      (-> result
+          cc/generate-string
+          (Response/ok)
+          (.build)))))
+
 
 (definterface ArcheType
   (helloWorld [])
   (warmUp [^org.neo4j.graphdb.GraphDatabaseService database])
   (migrate [^org.neo4j.graphdb.GraphDatabaseService database])
-  (getIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database]))
+  (getIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
+  (getIdentityLikes [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
+  (getIdentityHates [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
+  (getIdentityKnows [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database]))
 
 
 (deftype ^{Path "/service"} ArchetypeService
@@ -113,7 +132,34 @@
      Path "/identity"}
    getIdentity
    [this ^{DefaultValue "" QueryParam "email"} email
-         ^{DefaultValue "" QueryParam "md5hash"} hash
-         ^{Context true} database]
+    ^{DefaultValue "" QueryParam "md5hash"} hash
+    ^{Context true} database]
      (require 'clj-archetype.service)
-     (get-identity database email hash)))
+     (get-identity database email hash))
+
+  (^{GET true
+     Path "/identity/likes"}
+   getIdentityLikes
+   [this ^{DefaultValue "" QueryParam "email"} email
+    ^{DefaultValue "" QueryParam "md5hash"} hash
+    ^{Context true} database]
+     (require 'clj-archetype.service)
+     (get-identity-rel database email hash "LIKES" "url"))
+
+  (^{GET true
+     Path "/identity/hates"}
+   getIdentityHates
+   [this ^{DefaultValue "" QueryParam "email"} email
+    ^{DefaultValue "" QueryParam "md5hash"} hash
+    ^{Context true} database]
+     (require 'clj-archetype.service)
+     (get-identity-rel database email hash "HATES" "url"))
+
+  (^{GET true
+     Path "/identity/knows"}
+   getIdentityKnows
+   [this ^{DefaultValue "" QueryParam "email"} email
+    ^{DefaultValue "" QueryParam "md5hash"} hash
+    ^{Context true} database]
+     (require 'clj-archetype.service)
+     (get-identity-rel database email hash "KNOWS" "hash")))
