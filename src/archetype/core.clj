@@ -1,7 +1,12 @@
 (ns archetype.core
-  (:gen-class))
+  (:import (org.neo4j.graphdb DynamicLabel DynamicRelationshipType Label RelationshipType)))
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
+(defn make-label
+  ^Label
+  [^String x]
+  (DynamicLabel/label x))
+
+(defn make-rel
+  ^RelationshipType
+  [^String x]
+  (DynamicRelationshipType/withName x))

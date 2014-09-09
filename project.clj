@@ -12,12 +12,14 @@
                  [org.neo4j.app/neo4j-server ~neo4j-version]
                  [org.neo4j.app/neo4j-server ~neo4j-version :classifier "tests"]
                  [com.sun.jersey/jersey-client "1.9"]
-                 [junit/junit "4.11"]]
+                 [com.google.guava/guava "18.0"]
+                 [commons-validator/commons-validator "1.4.0"]
+                 [junit/junit "4.11"]
+                 [cheshire "5.3.1"]]
   :plugins [[lein-cloverage "1.0.2"]
             [lein-ancient "0.5.5"]
             [jonase/eastwood "0.1.4"]
             [lein-kibit "0.0.8"]]
-  :main ^:skip-aot clj-archetype.core
   :target-path "target/%s"
   :aot :all
   :global-vars {*warn-on-reflection* true}

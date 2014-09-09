@@ -1,14 +1,14 @@
 (ns archetype.service
+  (:require [archetype.core :refer [make-label make-rel]]
+            [archetype.identity :as ai]
+            [cheshire.core      :as cc])
   (:import (java.util.concurrent TimeUnit)
            (javax.ws.rs DefaultValue GET Path QueryParam)
            (javax.ws.rs.core Context Response)
-           (org.neo4j.graphdb DynamicLabel GraphDatabaseService Node Relationship Transaction)
+           (org.neo4j.graphdb Direction GraphDatabaseService Label Node Relationship Transaction)
            (org.neo4j.graphdb.schema Schema)
-           (org.neo4j.tooling GlobalGraphOperations)))
-
-(defn make-label
-  [^String x]
-  (DynamicLabel/label x))
+           (org.neo4j.tooling GlobalGraphOperations))
+  (:refer-clojure :exclude [hash]))
 
 
 (defn warm-up-rel
@@ -16,10 +16,12 @@
   (.getPropertyKeys r)
   (.getStartNode r))
 
+
 (defn warm-up-node
   [^Node n]
   (.getPropertyKeys n)
   (dorun (map warm-up-rel (.getRelationships n))))
+
 
 (defn warm-up
   [^GraphDatabaseService db]
@@ -65,10 +67,22 @@
           "Migrated!")))))
 
 
+(defn get-identity
+  [^GraphDatabaseService db ^String email ^String hash]
+  (with-open [^Transaction tx  (.beginTx db)]
+    (let  [hash     (ai/get-hash email hash)
+           i        (ai/get-identity-node hash db)]
+      (-> {"identity" (.getProperty i "hash")}
+          cc/generate-string
+          (Response/ok)
+          (.build)))))
+
+
 (definterface ArcheType
   (helloWorld [])
   (warmUp [^org.neo4j.graphdb.GraphDatabaseService database])
-  (migrate [^org.neo4j.graphdb.GraphDatabaseService database]))
+  (migrate [^org.neo4j.graphdb.GraphDatabaseService database])
+  (getIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database]))
 
 
 (deftype ^{Path "/service"} ArchetypeService
@@ -95,5 +109,11 @@
      (require 'clj-archetype.service)
      (migrate database))
 
-
-  )
+  (^{GET true
+     Path "/identity"}
+   getIdentity
+   [this ^{DefaultValue "" QueryParam "email"} email
+         ^{DefaultValue "" QueryParam "md5hash"} hash
+         ^{Context true} database]
+     (require 'clj-archetype.service)
+     (get-identity database email hash)))
