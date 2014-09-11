@@ -130,3 +130,25 @@
             (.getEntity ^Response (.getIdentityKnows *service* "" valid-md5-hash *connection*)))))
     (is (thrown-with-msg? Exception #"Identity not found"
                           (.getIdentityKnows *service* not-found-email "" *connection*)))))
+
+
+(deftest test-identity-create
+  (testing "Identity create"
+    (with-open [^Transaction tx     (.beginTx *connection*)]
+      (let  [^Node node   (.createNode *connection*)]
+        (.addLabel node (ac/make-label "Identity"))
+        (.setProperty node "hash" valid-md5-hash2)
+        (.success tx)))
+    (is (= 200
+           (.getStatus ^Response (.createIdentity *service* valid-email "" *connection*))))
+
+    (is (= 200
+           (.getStatus ^Response (.createIdentity *service* "" valid-md5-hash2 *connection*))))
+
+    (is (= 200
+           (.getStatus ^Response (.createIdentity *service* "" valid-md5-hash *connection*))))
+
+    (.shutdown *connection*)
+
+    (is (thrown-with-msg? Exception #"Unable to create"
+                          (.createIdentity *service* "" valid-md5-hash *connection*)))))

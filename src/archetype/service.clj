@@ -1,12 +1,14 @@
 (ns archetype.service
-  (:require [archetype.core :refer [make-label get-rels]]
-            [archetype.identity :as ai]
-            [cheshire.core      :as cc])
+  (:require [archetype.core      :as ac]
+            [archetype.identity  :as ai]
+            [archetype.exception :as ae]
+            [cheshire.core       :as cc])
   (:import (java.util.concurrent TimeUnit)
-           (javax.ws.rs DefaultValue GET Path QueryParam)
+           (javax.ws.rs DefaultValue GET Path POST QueryParam)
            (javax.ws.rs.core Context Response)
-           (org.neo4j.graphdb Direction GraphDatabaseService Label Node Relationship
-                              RelationshipType Transaction)
+           (org.neo4j.helpers.collection IteratorUtil)
+           (org.neo4j.graphdb ConstraintViolationException Direction GraphDatabaseService
+                              Label Node Relationship RelationshipType Transaction)
            (org.neo4j.graphdb.schema Schema)
            (org.neo4j.tooling GlobalGraphOperations))
   (:refer-clojure :exclude [hash]))
@@ -46,11 +48,11 @@
   (with-open [^Transaction tx  (.beginTx db)]
     (let [^Schema schema  (.schema db)]
       (-> schema
-          (.constraintFor (make-label "Identity"))
+          (.constraintFor (ac/make-label "Identity"))
           (.assertPropertyIsUnique "hash")
           (.create))
       (-> schema
-          (.constraintFor (make-label "Page"))
+          (.constraintFor (ac/make-label "Page"))
           (.assertPropertyIsUnique "url")
           (.create))
       (.success tx))))
@@ -87,11 +89,41 @@
                            (.getProperty
                             (.getEndNode r)
                             prop-name))
-                         (.getRelationships i (Direction/OUTGOING) (get-rels rel-name)))]
+                         (.getRelationships i (Direction/OUTGOING) (ac/get-rels rel-name)))]
       (-> result
           cc/generate-string
           (Response/ok)
           (.build)))))
+
+
+(defn- create-identity-safe
+  [^GraphDatabaseService db ^String hash]
+  (with-open [^Transaction tx  (.beginTx db)]
+    (let  [i        (IteratorUtil/singleOrNull (.findNodesByLabelAndProperty db
+                                                                             (ac/make-label "Identity")
+                                                                             "hash"
+                                                                             hash))
+           i        (if (nil? i)
+                      (doto (.createNode db)
+                        (.addLabel (ac/make-label "Identity"))
+                        (.setProperty "hash" hash))
+                      i)]
+      (.success tx)
+      (-> (Response/ok)
+          (.build)))))
+
+
+(defn create-identity
+  [^GraphDatabaseService db ^String email ^String hash]
+  (let [h     (ai/get-hash email hash)]
+    (try
+      (create-identity-safe db h)
+      (catch Throwable e
+        (println e)
+        (if (not (instance? ConstraintViolationException e))
+          (throw ae/identity-not-created)
+          (-> (Response/ok)
+              (.build)))))))
 
 
 (definterface ArcheType
@@ -101,7 +133,8 @@
   (getIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
   (getIdentityLikes [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
   (getIdentityHates [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
-  (getIdentityKnows [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database]))
+  (getIdentityKnows [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
+  (createIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database]))
 
 
 (deftype ^{Path "/service"} ArchetypeService
@@ -162,4 +195,13 @@
     ^{DefaultValue "" QueryParam "md5hash"} hash
     ^{Context true} database]
      (require 'clj-archetype.service)
-     (get-identity-rel database email hash "KNOWS" "hash")))
+     (get-identity-rel database email hash "KNOWS" "hash"))
+
+  (^{POST true
+     Path "/identity"}
+   createIdentity
+   [this ^{DefaultValue "" QueryParam "email"} email
+    ^{DefaultValue "" QueryParam "md5hash"} hash
+    ^{Context true} database]
+     (require 'clj-archetype.service)
+     (create-identity database email hash)))

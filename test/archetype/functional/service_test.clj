@@ -67,8 +67,8 @@
     (is (= valid-identity-hash
            (get-request-json (str "service/identity?md5hash=" valid-md5-hash))))
     (is (= {"error" "Missing Query Parameters."} (get-request-json "service/identity")))
-    (is (= {"error" "Missing E-mail Parameter."} (get-request-json "service/identity?email=invalid")))
-    (is (= {"error" "Missing MD5Hash Parameter."} (get-request-json "service/identity?md5hash=invalid")))
+    (is (= {"error" "Invalid E-mail Parameter."} (get-request-json "service/identity?email=invalid")))
+    (is (= {"error" "Invalid MD5Hash Parameter."} (get-request-json "service/identity?md5hash=invalid")))
     (is (= {"error" "Identity not found."} (get-request-json (str "service/identity?email=" not-found-email))))))
 
 
@@ -93,8 +93,8 @@
     (is (= valid-identity-pages
            (get-request-json (str "service/identity/likes?md5hash=" valid-md5-hash))))
     (is (= {"error" "Missing Query Parameters."} (get-request-json "service/identity/likes")))
-    (is (= {"error" "Missing E-mail Parameter."} (get-request-json "service/identity/likes?email=invalid")))
-    (is (= {"error" "Missing MD5Hash Parameter."} (get-request-json "service/identity/likes?md5hash=invalid")))
+    (is (= {"error" "Invalid E-mail Parameter."} (get-request-json "service/identity/likes?email=invalid")))
+    (is (= {"error" "Invalid MD5Hash Parameter."} (get-request-json "service/identity/likes?md5hash=invalid")))
     (is (= {"error" "Identity not found."} (get-request-json (str "service/identity/likes?email=" not-found-email))))))
 
 
@@ -119,8 +119,8 @@
     (is (= valid-identity-pages
            (get-request-json (str "service/identity/hates?md5hash=" valid-md5-hash))))
     (is (= {"error" "Missing Query Parameters."} (get-request-json "service/identity/hates")))
-    (is (= {"error" "Missing E-mail Parameter."} (get-request-json "service/identity/hates?email=invalid")))
-    (is (= {"error" "Missing MD5Hash Parameter."} (get-request-json "service/identity/hates?md5hash=invalid")))
+    (is (= {"error" "Invalid E-mail Parameter."} (get-request-json "service/identity/hates?email=invalid")))
+    (is (= {"error" "Invalid MD5Hash Parameter."} (get-request-json "service/identity/hates?md5hash=invalid")))
     (is (= {"error" "Identity not found."} (get-request-json (str "service/identity/hates?email=" not-found-email))))))
 
 
@@ -145,6 +145,36 @@
     (is (= valid-identity-knows
            (get-request-json (str "service/identity/knows?md5hash=" valid-md5-hash))))
     (is (= {"error" "Missing Query Parameters."} (get-request-json "service/identity/knows")))
-    (is (= {"error" "Missing E-mail Parameter."} (get-request-json "service/identity/knows?email=invalid")))
-    (is (= {"error" "Missing MD5Hash Parameter."} (get-request-json "service/identity/knows?md5hash=invalid")))
+    (is (= {"error" "Invalid E-mail Parameter."} (get-request-json "service/identity/knows?email=invalid")))
+    (is (= {"error" "Invalid MD5Hash Parameter."} (get-request-json "service/identity/knows?md5hash=invalid")))
     (is (= {"error" "Identity not found."} (get-request-json (str "service/identity/knows?email=" not-found-email))))))
+
+
+(deftest test-identity-create
+  (testing "Identity create"
+    (let   [^GraphDatabaseService db  (.getGraph (.getDatabase *server*))]
+      (with-open [^Transaction tx     (.beginTx db)]
+        (let  [^Node node   (.createNode db)]
+          (.addLabel node (ac/make-label "Identity"))
+          (.setProperty node "hash" valid-md5-hash2)
+          (.success tx))))
+    (is (= 200
+           (.getStatus ^JaxRsResponse (.post *request* (str "service/identity?email=" valid-email) ""))))
+    (is (= 200
+           (.getStatus ^JaxRsResponse (.post *request* (str "service/identity?md5hash=" valid-md5-hash) ""))))
+    (is (= 200
+           (.getStatus ^JaxRsResponse (.post *request* (str "service/identity?md5hash=" valid-md5-hash2) ""))))
+
+    (is (= {"error" "Missing Query Parameters."}
+           (cc/parse-string (.getEntity ^JaxRsResponse (.post *request* "service/identity" "")))))
+    (is (= {"error" "Invalid E-mail Parameter."}
+           (cc/parse-string (.getEntity ^JaxRsResponse (.post *request* "service/identity?email=invalid" "")))))
+    (is (= {"error" "Invalid MD5Hash Parameter."}
+           (cc/parse-string (.getEntity ^JaxRsResponse (.post *request* "service/identity?md5hash=invalid" "")))))
+    (-> *server*
+        (.getDatabase)
+        (.getGraph)
+        (.shutdown))
+    (is (= {"error" "Unable to create Identity."}
+           (cc/parse-string (.getEntity ^JaxRsResponse
+                                        (.post *request* (str "service/identity?md5hash=" valid-md5-hash) "")))))))
