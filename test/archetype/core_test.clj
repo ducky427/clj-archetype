@@ -9,6 +9,7 @@
 
 (def valid-url "http://en.wikipedia.org/wiki/Neo4j")
 (def valid-url2 "http://en.wikipedia.org/wiki/Nutella")
+(def invalid-wiki-url "http://en.notwikipedia.org/wiki/Neo4j")
 
 (def valid-identity-hash  {"identity" valid-md5-hash})
 (def valid-identity-pages [valid-url valid-url2])

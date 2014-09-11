@@ -178,3 +178,37 @@
     (is (= {"error" "Unable to create Identity."}
            (cc/parse-string (.getEntity ^JaxRsResponse
                                         (.post *request* (str "service/identity?md5hash=" valid-md5-hash) "")))))))
+
+
+(deftest test-page-create
+  (testing "Page create"
+    (let   [^GraphDatabaseService db  (.getGraph (.getDatabase *server*))]
+      (with-open [^Transaction tx     (.beginTx db)]
+        (let  [^Node node   (.createNode db)]
+          (.addLabel node (ac/make-label "Page"))
+          (.setProperty node "url" valid-url2)
+          (.success tx))))
+    (is (= 200
+           (.getStatus ^JaxRsResponse (.post *request* (str "service/page?url=" valid-url) ""))))
+    (is (= 200
+           (.getStatus ^JaxRsResponse (.post *request* (str "service/page?url=" valid-url2) ""))))
+
+    (is (= {"error" "Missing Query Parameters."}
+           (cc/parse-string (.getEntity ^JaxRsResponse (.post *request* "service/page" "")))))
+    (is (= {"error" "Invalid URL Parameter."}
+           (cc/parse-string (.getEntity ^JaxRsResponse (.post *request* "service/page?url=invalid" "")))))
+    (is (= {"error" "Must be a valid Wikipedia URL."}
+           (cc/parse-string (.getEntity ^JaxRsResponse
+                                        (.post *request* (str "service/page?url=" invalid-wiki-url) "")))))
+
+    (is (= {"error" "Wikipedia URL not Found."}
+           (cc/parse-string (.getEntity ^JaxRsResponse
+                                        (.post *request* (str "service/page?url=" valid-url "invalid") "")))))
+
+    (-> *server*
+        (.getDatabase)
+        (.getGraph)
+        (.shutdown))
+    (is (= {"error" "Unable to create Page."}
+           (cc/parse-string (.getEntity ^JaxRsResponse
+                                        (.post *request* (str "service/page?url=" valid-url) "")))))))

@@ -2,6 +2,7 @@
   (:require [archetype.core      :as ac]
             [archetype.identity  :as ai]
             [archetype.exception :as ae]
+            [archetype.page      :as ag]
             [cheshire.core       :as cc])
   (:import (java.util.concurrent TimeUnit)
            (javax.ws.rs DefaultValue GET Path POST QueryParam)
@@ -95,18 +96,18 @@
           (Response/ok)
           (.build)))))
 
-
-(defn- create-identity-safe
-  [^GraphDatabaseService db ^String hash]
+(defn- create-node
+  [^GraphDatabaseService db ^String label ^String prop-name ^String prop-value]
   (with-open [^Transaction tx  (.beginTx db)]
-    (let  [i        (IteratorUtil/singleOrNull (.findNodesByLabelAndProperty db
-                                                                             (ac/make-label "Identity")
-                                                                             "hash"
-                                                                             hash))
+    (let  [l        (ac/make-label label)
+           i        (IteratorUtil/singleOrNull (.findNodesByLabelAndProperty db
+                                                                             l
+                                                                             prop-name
+                                                                             prop-value))
            i        (if (nil? i)
                       (doto (.createNode db)
-                        (.addLabel (ac/make-label "Identity"))
-                        (.setProperty "hash" hash))
+                        (.addLabel l)
+                        (.setProperty prop-name prop-value))
                       i)]
       (.success tx)
       (-> (Response/ok)
@@ -117,11 +118,22 @@
   [^GraphDatabaseService db ^String email ^String hash]
   (let [h     (ai/get-hash email hash)]
     (try
-      (create-identity-safe db h)
+      (create-node db "Identity" "hash" h)
       (catch Throwable e
-        (println e)
         (if (not (instance? ConstraintViolationException e))
           (throw ae/identity-not-created)
+          (-> (Response/ok)
+              (.build)))))))
+
+
+(defn create-page
+  [^GraphDatabaseService db ^String url]
+  (let [u     (ag/get-page-url url)]
+    (try
+      (create-node db "Page" "url" u)
+      (catch Throwable e
+        (if (not (instance? ConstraintViolationException e))
+          (throw ae/page-not-created)
           (-> (Response/ok)
               (.build)))))))
 
@@ -134,7 +146,8 @@
   (getIdentityLikes [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
   (getIdentityHates [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
   (getIdentityKnows [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
-  (createIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database]))
+  (createIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
+  (createPage [^String url ^org.neo4j.graphdb.GraphDatabaseService database]))
 
 
 (deftype ^{Path "/service"} ArchetypeService
@@ -204,4 +217,13 @@
     ^{DefaultValue "" QueryParam "md5hash"} hash
     ^{Context true} database]
      (require 'clj-archetype.service)
-     (create-identity database email hash)))
+     (create-identity database email hash))
+
+
+  (^{POST true
+     Path "/page"}
+   createPage
+   [this ^{DefaultValue "" QueryParam "url"} url
+    ^{Context true} database]
+     (require 'clj-archetype.service)
+     (create-page database url)))

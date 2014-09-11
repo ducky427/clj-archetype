@@ -152,3 +152,24 @@
 
     (is (thrown-with-msg? Exception #"Unable to create"
                           (.createIdentity *service* "" valid-md5-hash *connection*)))))
+
+
+(deftest test-page-create
+  (testing "Page create"
+    (.migrate *service* *connection*)
+    (with-open [^Transaction tx     (.beginTx *connection*)]
+      (let  [^Node node   (.createNode *connection*)]
+        (.addLabel node (ac/make-label "Page"))
+        (.setProperty node "url" valid-url2)
+        (.success tx)))
+
+    (is (= 200
+           (.getStatus ^Response (.createPage *service* valid-url *connection*))))
+    (is (= 200
+           (.getStatus ^Response (.createPage *service* valid-url2 *connection*))))
+    (.shutdown *connection*)
+
+    (is (thrown-with-msg? Exception #"create"
+                          (.createPage *service* valid-url *connection*)))
+
+    ))
