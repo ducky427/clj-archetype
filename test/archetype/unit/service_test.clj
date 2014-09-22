@@ -170,6 +170,45 @@
     (.shutdown *connection*)
 
     (is (thrown-with-msg? Exception #"create"
-                          (.createPage *service* valid-url *connection*)))
+                          (.createPage *service* valid-url *connection*)))))
 
-    ))
+
+(deftest test-page-get
+  (testing "Page get"
+    (with-open [^Transaction tx     (.beginTx *connection*)]
+      (let  [^Node node   (.createNode *connection*)]
+        (.addLabel node (ac/make-label "Page"))
+        (.setProperty node "url" valid-url)
+        (.success tx)))
+
+    (is (= valid-page-hash
+           (cc/parse-string
+            (.getEntity ^Response (.getPage *service* valid-url *connection*)))))
+
+    (is (thrown-with-msg? Exception #"not found"
+                          (.getPage *service* valid-url2 *connection*)))))
+
+
+(deftest test-page-get-links
+  (testing "Page get links"
+    (with-open [^Transaction tx     (.beginTx *connection*)]
+      (let  [^Node node   (.createNode *connection*)
+             ^Node node2  (.createNode *connection*)
+             ^Node node3  (.createNode *connection*)]
+        (.addLabel node (ac/make-label "Page"))
+        (.addLabel node2 (ac/make-label "Page"))
+        (.addLabel node3 (ac/make-label "Page"))
+        (.setProperty node "url" valid-url)
+        (.setProperty node2 "url" valid-url2)
+        (.setProperty node3 "url" valid-url3)
+        (.createRelationshipTo node node2 (ac/make-rel "LINKS"))
+        (.createRelationshipTo node node3 (ac/make-rel "LINKS"))
+
+        (.success tx)))
+
+    (is (= valid-page-links
+           (cc/parse-string
+            (.getEntity ^Response (.getPageLinks *service* valid-url *connection*)))))
+
+    (is (thrown-with-msg? Exception #"not found"
+                          (.getPageLinks *service* invalid-wiki-url *connection*)))))

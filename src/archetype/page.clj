@@ -1,7 +1,10 @@
 (ns archetype.page
   (:require [archetype.exception :as ae]
+            [archetype.core :refer [make-label]]
             [clojure.string      :as s])
   (:import (org.apache.commons.validator.routines UrlValidator)
+           (org.neo4j.graphdb GraphDatabaseService Node)
+           (org.neo4j.helpers.collection IteratorUtil)
            (java.net URL HttpURLConnection)))
 
 (defn is-valid-url?
@@ -40,3 +43,15 @@
             (throw ae/wiki-url-not-found))
           (throw ae/invalid-wiki-url)))
       (throw ae/invalid-url))))
+
+
+(defn ^Node get-page-node
+  [^String url ^GraphDatabaseService db]
+  (let  [^Node page   (IteratorUtil/singleOrNull
+                       (.findNodesByLabelAndProperty db
+                                                     (make-label "Page")
+                                                     "url"
+                                                     url))]
+    (if (nil? page)
+      (throw ae/page-not-found)
+      page)))

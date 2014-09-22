@@ -3,6 +3,7 @@
             [archetype.identity  :as ai]
             [archetype.exception :as ae]
             [archetype.page      :as ag]
+            [clojure.string      :as s]
             [cheshire.core       :as cc])
   (:import (java.util.concurrent TimeUnit)
            (javax.ws.rs DefaultValue GET Path POST QueryParam)
@@ -25,6 +26,15 @@
   [^Node n]
   (.getPropertyKeys n)
   (dorun (map warm-up-rel (.getRelationships n))))
+
+
+(defn get-rel-props
+  [^Node start-node ^String rel-name ^String prop-name]
+  (map (fn [^Relationship r]
+         (.getProperty
+          (.getEndNode r)
+          prop-name))
+       (.getRelationships start-node (Direction/OUTGOING) (ac/get-rels rel-name))))
 
 
 (defn warm-up
@@ -81,16 +91,13 @@
           (Response/ok)
           (.build)))))
 
+
 (defn get-identity-rel
   [^GraphDatabaseService db ^String email ^String hash rel-name prop-name]
   (with-open [^Transaction tx  (.beginTx db)]
     (let  [hash     (ai/get-hash email hash)
            i        (ai/get-identity-node hash db)
-           result   (map (fn [^Relationship r]
-                           (.getProperty
-                            (.getEndNode r)
-                            prop-name))
-                         (.getRelationships i (Direction/OUTGOING) (ac/get-rels rel-name)))]
+           result   (get-rel-props i rel-name prop-name)]
       (-> result
           cc/generate-string
           (Response/ok)
@@ -138,6 +145,31 @@
               (.build)))))))
 
 
+(defn get-page
+  [^GraphDatabaseService db ^String url]
+  (if (s/blank? url)
+    (throw ae/missing-params)
+    (with-open [^Transaction tx   (.beginTx db)]
+      (let [^Node page   (ag/get-page-node url db)]
+        (-> {"url" (.getProperty page "url")}
+            cc/generate-string
+            (Response/ok)
+            (.build))))))
+
+
+(defn get-page-links
+  [^GraphDatabaseService db ^String url]
+  (if (s/blank? url)
+    (throw ae/missing-params)
+    (with-open [^Transaction tx  (.beginTx db)]
+      (let [^Node page   (ag/get-page-node url db)
+            result       (get-rel-props page "LINKS" "url")]
+        (-> result
+            cc/generate-string
+            (Response/ok)
+            (.build))))))
+
+
 (definterface ArcheType
   (helloWorld [])
   (warmUp [^org.neo4j.graphdb.GraphDatabaseService database])
@@ -147,7 +179,9 @@
   (getIdentityHates [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
   (getIdentityKnows [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
   (createIdentity [^String email ^String hash ^org.neo4j.graphdb.GraphDatabaseService database])
-  (createPage [^String url ^org.neo4j.graphdb.GraphDatabaseService database]))
+  (createPage [^String url ^org.neo4j.graphdb.GraphDatabaseService database])
+  (getPage [^String url ^org.neo4j.graphdb.GraphDatabaseService database])
+  (getPageLinks [^String url ^org.neo4j.graphdb.GraphDatabaseService database]))
 
 
 (deftype ^{Path "/service"} ArchetypeService
@@ -226,4 +260,21 @@
    [this ^{DefaultValue "" QueryParam "url"} url
     ^{Context true} database]
      (require 'clj-archetype.service)
-     (create-page database url)))
+     (create-page database url))
+
+  (^{GET true
+     Path "/page"}
+   getPage
+   [this ^{DefaultValue "" QueryParam "url"} url
+    ^{Context true} database]
+     (require 'clj-archetype.service)
+     (get-page database url))
+
+
+  (^{GET true
+     Path "/page/links"}
+   getPageLinks
+   [this ^{DefaultValue "" QueryParam "url"} url
+    ^{Context true} database]
+     (require 'clj-archetype.service)
+     (get-page-links database url)))
