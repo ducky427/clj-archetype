@@ -5,7 +5,7 @@
             [archetype.core-test :refer :all]
             [cheshire.core    :as cc])
   (:import (org.neo4j.test TestGraphDatabaseFactory)
-           (org.neo4j.graphdb GraphDatabaseService Label Node Transaction)
+           (org.neo4j.graphdb GraphDatabaseService Label Node RelationshipType Transaction)
            (archetype.service ArchetypeService)
            (javax.ws.rs.core Response)))
 

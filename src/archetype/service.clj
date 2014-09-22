@@ -117,8 +117,7 @@
                         (.setProperty prop-name prop-value))
                       i)]
       (.success tx)
-      (-> (Response/ok)
-          (.build)))))
+      (.build (Response/ok)))))
 
 
 (defn create-identity
@@ -127,10 +126,9 @@
     (try
       (create-node db "Identity" "hash" h)
       (catch Throwable e
-        (if (not (instance? ConstraintViolationException e))
+        (if-not (instance? ConstraintViolationException e)
           (throw ae/identity-not-created)
-          (-> (Response/ok)
-              (.build)))))))
+          (.build (Response/ok)))))))
 
 
 (defn create-page
@@ -139,10 +137,9 @@
     (try
       (create-node db "Page" "url" u)
       (catch Throwable e
-        (if (not (instance? ConstraintViolationException e))
+        (if-not (instance? ConstraintViolationException e)
           (throw ae/page-not-created)
-          (-> (Response/ok)
-              (.build)))))))
+          (.build (Response/ok)))))))
 
 
 (defn get-page

@@ -4,7 +4,7 @@
             [archetype.core-test :refer :all]
             [cheshire.core :as cc])
   (:import (com.sun.jersey.api.client Client)
-           (org.neo4j.graphdb GraphDatabaseService Label Node Transaction)
+           (org.neo4j.graphdb GraphDatabaseService Label Node RelationshipType Transaction)
            (org.neo4j.server NeoServer)
            (org.neo4j.server.helpers CommunityServerBuilder)
            (org.neo4j.server.rest JaxRsResponse RestRequest)))

@@ -4,7 +4,7 @@
 
 
 (defn make-exception
-  [code error]
+  [^Integer code ^String error]
   (WebApplicationException. (Throwable. error) (-> (Response/status code)
                                                    (.entity (str "{\"error\":\"" error "\"}"))
                                                    (.type (MediaType/APPLICATION_JSON))

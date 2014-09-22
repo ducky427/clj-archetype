@@ -3,7 +3,7 @@
             [archetype.core :refer [make-label]]
             [clojure.string      :as s])
   (:import (org.apache.commons.validator.routines UrlValidator)
-           (org.neo4j.graphdb GraphDatabaseService Node)
+           (org.neo4j.graphdb GraphDatabaseService Label Node)
            (org.neo4j.helpers.collection IteratorUtil)
            (java.net URL HttpURLConnection)))
 
